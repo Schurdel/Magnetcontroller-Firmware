@@ -60,6 +60,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define LOAD_SENSE_A_Pin GPIO_PIN_1
+#define LOAD_SENSE_A_GPIO_Port GPIOA
+#define LOAD_SENSE_B_Pin GPIO_PIN_2
+#define LOAD_SENSE_B_GPIO_Port GPIOA
+#define ANALOG_IN_Pin GPIO_PIN_3
+#define ANALOG_IN_GPIO_Port GPIOA
+#define VOLTAGE_SENSE_Pin GPIO_PIN_7
+#define VOLTAGE_SENSE_GPIO_Port GPIOA
+#define V_THERM_Pin GPIO_PIN_0
+#define V_THERM_GPIO_Port GPIOB
+#define BRAKE_ON_Pin GPIO_PIN_8
+#define BRAKE_ON_GPIO_Port GPIOA
 #define LED_RED_Pin GPIO_PIN_3
 #define LED_RED_GPIO_Port GPIOB
 #define LED_GREEN_1_Pin GPIO_PIN_4

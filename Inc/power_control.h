@@ -16,11 +16,13 @@
 #define DISABLE_1_PIN 	GPIO_PIN_15
 #define DISABLE_1_PORT 	GPIOA
 
-#define __ENABLE_PWM_1() HAL_GPIO_WritePin(DISABLE_1_PORT, DISABLE_1_PIN, 0);
-#define __DISABLE_PWM_1() HAL_GPIO_WritePin(DISABLE_1_PORT, DISABLE_1_PIN, 1);
-#define __ENABLE_PWM_2() HAL_GPIO_WritePin(DISABLE_2_PORT, DISABLE_2_PIN, 0);
-#define __DISABLE_PWM_2() HAL_GPIO_WritePin(DISABLE_2_PORT, DISABLE_2_PIN, 1);
+#define __ENABLE_HB_1() HAL_GPIO_WritePin(DISABLE_1_PORT, DISABLE_1_PIN, 0);
+#define __DISABLE_HB_1() HAL_GPIO_WritePin(DISABLE_1_PORT, DISABLE_1_PIN, 1);
+#define __ENABLE_HB_2() HAL_GPIO_WritePin(DISABLE_2_PORT, DISABLE_2_PIN, 0);
+#define __DISABLE_HB_2() HAL_GPIO_WritePin(DISABLE_2_PORT, DISABLE_2_PIN, 1);
 
 void testPWM(void);
+void setPWM1(float input);
+void setPWM2(float input);
 
 #endif /* INC_POWER_CONTROL_H_ */
