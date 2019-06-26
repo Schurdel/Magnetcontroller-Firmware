@@ -47,7 +47,14 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-
+#define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
+#define min(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a < _b ? _a : _b; })
 /* USER CODE END EM */
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
@@ -60,24 +67,48 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define IO4_Pin GPIO_PIN_13
+#define IO4_GPIO_Port GPIOC
+#define IO3_Pin GPIO_PIN_14
+#define IO3_GPIO_Port GPIOC
+#define IO2_Pin GPIO_PIN_15
+#define IO2_GPIO_Port GPIOC
+#define LOAD_SENSE_B_Pin GPIO_PIN_0
+#define LOAD_SENSE_B_GPIO_Port GPIOA
 #define LOAD_SENSE_A_Pin GPIO_PIN_1
 #define LOAD_SENSE_A_GPIO_Port GPIOA
-#define LOAD_SENSE_B_Pin GPIO_PIN_2
-#define LOAD_SENSE_B_GPIO_Port GPIOA
+#define CURRENT_SENSOR_Pin GPIO_PIN_2
+#define CURRENT_SENSOR_GPIO_Port GPIOA
 #define ANALOG_IN_Pin GPIO_PIN_3
 #define ANALOG_IN_GPIO_Port GPIOA
+#define DAC_OUT3_Pin GPIO_PIN_4
+#define DAC_OUT3_GPIO_Port GPIOA
+#define DAC_OUT2_Pin GPIO_PIN_5
+#define DAC_OUT2_GPIO_Port GPIOA
+#define DAC_OUT1_Pin GPIO_PIN_6
+#define DAC_OUT1_GPIO_Port GPIOA
 #define VOLTAGE_SENSE_Pin GPIO_PIN_7
 #define VOLTAGE_SENSE_GPIO_Port GPIOA
 #define V_THERM_Pin GPIO_PIN_0
 #define V_THERM_GPIO_Port GPIOB
-#define BRAKE_ON_Pin GPIO_PIN_8
-#define BRAKE_ON_GPIO_Port GPIOA
-#define LED_RED_Pin GPIO_PIN_3
+#define CURRENT_REF_Pin GPIO_PIN_1
+#define CURRENT_REF_GPIO_Port GPIOB
+#define FAN_OFF_Pin GPIO_PIN_12
+#define FAN_OFF_GPIO_Port GPIOB
+#define DISABLE_HB2_Pin GPIO_PIN_13
+#define DISABLE_HB2_GPIO_Port GPIOB
+#define DISABLE_HB1_Pin GPIO_PIN_15
+#define DISABLE_HB1_GPIO_Port GPIOA
+#define LED_GREEN2_Pin GPIO_PIN_3
+#define LED_GREEN2_GPIO_Port GPIOB
+#define LED_GREEN1_Pin GPIO_PIN_4
+#define LED_GREEN1_GPIO_Port GPIOB
+#define LED_RED_Pin GPIO_PIN_5
 #define LED_RED_GPIO_Port GPIOB
-#define LED_GREEN_1_Pin GPIO_PIN_4
-#define LED_GREEN_1_GPIO_Port GPIOB
-#define LED_GREEN_2_Pin GPIO_PIN_5
-#define LED_GREEN_2_GPIO_Port GPIOB
+#define IO1_Pin GPIO_PIN_7
+#define IO1_GPIO_Port GPIOB
+#define USB_NRST_Pin GPIO_PIN_9
+#define USB_NRST_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
