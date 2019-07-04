@@ -18,19 +18,19 @@ uint32_t result_count = 0;
 
 ADC_HandleTypeDef hadc1;
 
-void Update24kHz(void){
+void UpdateControlLoop(void){
 
 	uint32_t analog_in_raw;
 	uint32_t current_sense_raw;
 	float pwm_output;
 
-
 	analog_in_raw = ADC1_buffer[3];
 	current_sense_raw = ADC1_buffer[2];
 
-	pwm_output = (((float)analog_in_raw - (float)current_sense_raw))/2000 + 0.5f;
+	pwm_output = (((float)analog_in_raw - (float)current_sense_raw))/500 + 0.5f;
 	pwm_output = min(1.0f, pwm_output);
 	pwm_output = max(0.0f, pwm_output);
+	//pwm_output = 0.0f;
 
 	setPWM1(pwm_output);
 	setPWM2(pwm_output);
