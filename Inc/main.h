@@ -32,7 +32,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "io_interface.h"
+#include "power_control.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

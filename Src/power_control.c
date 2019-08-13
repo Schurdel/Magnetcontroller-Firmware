@@ -12,25 +12,46 @@ TIM_HandleTypeDef htim16;
 ADC_HandleTypeDef hadc1;
 ADC_HandleTypeDef hadc2;
 
-uint32_t analog_in_raw = 0;
-uint32_t current_sensor_raw = 0;
-uint32_t result_count = 0;
+float analog_in_raw = 0;
+float current_sensor_raw = 0;
+
+uint32_t analog_in_zero = 1965;					// Some measured plausible zero value for input adc
+uint32_t current_sensor_zero = 2565; 			// Some measured plausible zero value for current sensor
 
 ADC_HandleTypeDef hadc1;
+DAC_HandleTypeDef hdac2;
 
 void UpdateControlLoop(void){
 
-	uint32_t analog_in_raw;
-	uint32_t current_sense_raw;
-	float pwm_output;
+	float analog_in_raw = 0;
+	float current_sense_raw = 0;
+	float pwm_output = 0;
+	static float integrator = 0.0f;
+	uint32_t sum_current = 0;
+	uint32_t sum_analog = 0;
 
-	analog_in_raw = ADC1_buffer[3];
-	current_sense_raw = ADC1_buffer[2];
+	// Form mean value of sensor data
+	for(uint32_t k = 0; k<DAC1_CH1_BUFFER_LEN; k++){
+		sum_current += DAC1_ch1_buffer[k];
+		sum_analog += DAC1_ch2_buffer[k];
+	}
 
-	pwm_output = (((float)analog_in_raw - (float)current_sense_raw))/500 + 0.5f;
-	pwm_output = min(1.0f, pwm_output);
-	pwm_output = max(0.0f, pwm_output);
-	//pwm_output = 0.0f;
+	uint32_t current_mean = sum_current / DAC1_CH1_BUFFER_LEN;
+	uint32_t analog_mean = sum_analog / DAC1_CH1_BUFFER_LEN;
+
+	//Convert sensor data to voltage and current
+	analog_in_raw = (float)((int32_t)analog_mean - (int32_t)analog_in_zero) * INPUT_VOLT * 3;      // 3 Amps for each volt
+	current_sense_raw = (float)((int32_t)current_mean - (int32_t)current_sensor_zero) * SENSOR_AMP; // Current in Amps
+
+	pwm_output = 0.5f + VOLT_PWM * K_P * (analog_in_raw-current_sense_raw)+ K_I*integrator*0;
+
+	// Conditional integration
+	if(pwm_output < 1.0f && pwm_output > 0.0f){
+		integrator += analog_in_raw-current_sense_raw;
+	}
+
+	pwm_output = min(0.99f, pwm_output);
+	pwm_output = max(0.01f, pwm_output);
 
 	setPWM1(pwm_output);
 	setPWM2(pwm_output);
@@ -38,9 +59,44 @@ void UpdateControlLoop(void){
 	__ENABLE_HB1();
 	__ENABLE_HB2();
 
-	HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, 1);
+	// Send out PWM value via DAC
+	uint32_t pwm_dac = pwm_output * 4095;
+	HAL_DAC_SetValue(&hdac2, DAC_CHANNEL_1, DAC_ALIGN_12B_R, pwm_dac);
 
 }
+
+void zeroInput(void){
+
+	uint32_t sum_input = 0;
+	const uint32_t num = 10;
+
+	// TODO: Do some more sophisticated filtering to get a proper zero value...
+	for(uint32_t n = 0; n<num; n++){
+		for(uint32_t k = 0; k<DAC1_CH2_BUFFER_LEN; k++){
+			sum_input += DAC1_ch2_buffer[k];
+		}
+		HAL_Delay(100); //Delay 100ms
+	}
+
+	analog_in_zero = sum_input / (DAC1_CH2_BUFFER_LEN*num);
+}
+
+void zeroCurrent(void){
+
+	uint32_t sum_current = 0;
+	const uint32_t num = 10;
+
+	// TODO: Do some more sophisticated filtering to get a proper zero value...
+	for(uint32_t n = 0; n<num; n++){
+		for(uint32_t k = 0; k<DAC1_CH1_BUFFER_LEN; k++){
+			sum_current += DAC1_ch1_buffer[k];
+		}
+		HAL_Delay(100); //Delay 100ms
+	}
+
+	current_sensor_zero = sum_current / (DAC1_CH1_BUFFER_LEN*num);
+}
+
 
 void testPWM(void){
 /* Test routine for testing complementary PWM output */

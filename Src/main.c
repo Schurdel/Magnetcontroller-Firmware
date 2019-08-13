@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "power_control.h"
+#include "io_interface.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -49,13 +50,15 @@ DMA_HandleTypeDef hdma_adc2;
 
 DAC_HandleTypeDef hdac1;
 DAC_HandleTypeDef hdac2;
-DMA_HandleTypeDef hdma_dac1_ch1;
 DMA_HandleTypeDef hdma_dac1_ch2;
+DMA_HandleTypeDef hdma_dac1_ch1;
 DMA_HandleTypeDef hdma_dac2_ch1;
 
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim15;
 TIM_HandleTypeDef htim16;
+
+UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 
@@ -65,6 +68,10 @@ uint32_t ADC2_buffer[ADC2_BUFFER_LEN];
 uint32_t DAC1_ch1_buffer[DAC1_CH1_BUFFER_LEN];
 uint32_t DAC1_ch2_buffer[DAC1_CH2_BUFFER_LEN];
 uint32_t DAC2_buffer[DAC2_BUFFER_LEN];
+
+//// Buffers for UART data
+uint8_t UART_buffer[UART_BUFFER_LEN];
+uint8_t UART_command;
 
 //// Other control variables
 float input_voltage;
@@ -84,6 +91,7 @@ static void MX_TIM15_Init(void);
 static void MX_TIM16_Init(void);
 static void MX_ADC2_Init(void);
 static void MX_TIM6_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -121,6 +129,13 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	}
 }
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	HAL_GPIO_TogglePin(LED_GREEN1_GPIO_Port, LED_GREEN1_Pin);
+	if(huart->Instance == USART1){
+		uint8_t command = UART_buffer[0];
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -160,6 +175,7 @@ int main(void)
   MX_TIM16_Init();
   MX_ADC2_Init();
   MX_TIM6_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   // Start PWMs in interrupt mode
@@ -173,13 +189,26 @@ int main(void)
   HAL_ADC_Start_DMA(&hadc2, ADC2_buffer, ADC2_BUFFER_LEN);
 
   // Start DACs in DMA mode - DAC1Ch 1 has the nicest signal...
-  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, DAC1_ch1_buffer, DAC1_CH2_BUFFER_LEN, DAC_ALIGN_12B_R);
-  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_2, DAC1_ch1_buffer, ADC2_BUFFER_LEN, DAC_ALIGN_12B_R);
-  HAL_DAC_Start_DMA(&hdac2, DAC_CHANNEL_1, DAC1_ch2_buffer, DAC1_CH2_BUFFER_LEN, DAC_ALIGN_12B_R);
+  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, DAC1_ch1_buffer, DAC1_CH1_BUFFER_LEN, DAC_ALIGN_12B_R);
+  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_2, ADC2_buffer, ADC2_BUFFER_LEN, DAC_ALIGN_12B_R);
+  HAL_DAC_Start(&hdac2, DAC_CHANNEL_1);
+  //HAL_DAC_Start_DMA(&hdac2, DAC_CHANNEL_1, DAC1_ch2_buffer, DAC1_CH2_BUFFER_LEN, DAC_ALIGN_12B_R);
   //HAL_DAC_Start_DMA(&hdac2, DAC_CHANNEL_1, &ADC2->DR, 1, DAC_ALIGN_12B_R);
+
+  // Start UART receive mode with interrupt
+  HAL_UART_Receive_IT(&huart1, UART_buffer, 5);
 
   // Start Timer 6 for ADC/DAC conversion events
   HAL_TIM_Base_Start(&htim6);
+
+  // Release FTDI chip from reset
+  HAL_GPIO_WritePin(USB_NRST_GPIO_Port, USB_NRST_Pin, 1);
+
+  // Save reference values for zero current and zero input
+  HAL_Delay(1000);
+  zeroCurrent();
+  zeroInput();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -189,6 +218,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+	// TODO: Implement state machine and control logic here...
 
 	  HAL_GPIO_TogglePin(LED_GREEN2_GPIO_Port, LED_GREEN2_Pin);
 	  HAL_Delay(500);
@@ -205,6 +236,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the CPU, AHB and APB busses clocks 
   */
@@ -229,6 +261,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1;
+  PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK1;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
   }
@@ -479,7 +517,7 @@ static void MX_TIM6_Init(void)
   htim6.Instance = TIM6;
   htim6.Init.Prescaler = 0;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 359;
+  htim6.Init.Period = 719;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
@@ -637,11 +675,47 @@ static void MX_TIM16_Init(void)
 
 }
 
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 38400;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_RTS_CTS;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
 /** 
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void) 
 {
+
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
 
@@ -704,14 +778,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA9 PA10 PA11 PA12 */
-  GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : DISABLE_HB1_Pin */
   GPIO_InitStruct.Pin = DISABLE_HB1_Pin;
