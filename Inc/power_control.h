@@ -23,7 +23,7 @@
 #define ADC2_BUFFER_LEN ADC2_NSAMPLES*ADC2_NCHANNELS    // Total length of the ADC buffer written by DMA
 #define DAC2_BUFFER_LEN ADC2_NSAMPLES					// Total length of the DAC buffer
 
-#define K_I 0.0024f 									// Integrator gain in V/(A * Sample)
+#define K_I 0.0058f 									// Integrator gain in V/(A * Sample)
 #define K_P 5.4f 										// Proportional gain in V/A
 #define SENSOR_AMP 1.0f/42.5f  							// Conversion factor for LSB to Ampere
 #define INPUT_VOLT 2.5f*8.0f/4096.0f 					// Conversion factor for Analog Input LSB to Volts

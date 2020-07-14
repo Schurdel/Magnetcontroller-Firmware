@@ -6,13 +6,28 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics.
-  * All rights reserved.</center></h2>
+  * This code was written during a bachelor thesis project and should be
+  * considered a prototype only. The aim of the firmware was to test and debug
+  * the developed hardware and some changes are recommended in order to obtain
+  * a usable product.
   *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
+  * If you read this then you are committed to improving and actually using the
+  * developed hardware. I am honored but at the same time sorry for the state
+  * that you find this code in. Due to the page limit and time constraints of
+  * my bachelor thesis, the documentation provided in the attached thesis
+  * document is very basic and not all the possible and planned features are
+  * implemented.
+  *
+  * If you need any background information which is not contained in the
+  * comments of the code or not self explanatory enough - feel free to contact
+  * me via georg.feiler@hotmail.com which will be operational for many years to
+  * come. Keep in mind that both the hardware and test-firmware offer a lot of
+  * room for improvement since they are only prototypes.
+  *
+  * Thanks for your consideration and good luck!
+  * Georg Feiler
+  *
+  * Apr-11-2020
   *
   ******************************************************************************
   */
@@ -133,7 +148,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	HAL_GPIO_TogglePin(LED_GREEN1_GPIO_Port, LED_GREEN1_Pin);
 	if(huart->Instance == USART1){
-		uint8_t command = UART_buffer[0];
+		//uint8_t command = UART_buffer[0];
+		// TODO: Use the received command for something...
 	}
 }
 /* USER CODE END 0 */
@@ -147,7 +163,6 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
-  
 
   /* MCU Configuration--------------------------------------------------------*/
 
@@ -205,7 +220,7 @@ int main(void)
   HAL_GPIO_WritePin(USB_NRST_GPIO_Port, USB_NRST_Pin, 1);
 
   // Save reference values for zero current and zero input
-  HAL_Delay(1000);
+  HAL_Delay(500);
   zeroCurrent();
   zeroInput();
 
@@ -219,7 +234,8 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-	// TODO: Implement state machine and control logic here...
+	// TODO: Implement state machine or higher order control logic here...
+	// TODO: Implement temperature readout and overtemperature protection logic
 
 	  HAL_GPIO_TogglePin(LED_GREEN2_GPIO_Port, LED_GREEN2_Pin);
 	  HAL_Delay(500);
@@ -572,7 +588,7 @@ static void MX_TIM15_Init(void)
   }
   sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
   sSlaveConfig.InputTrigger = TIM_TS_ITR2;
-  if (HAL_TIM_SlaveConfigSynchronization(&htim15, &sSlaveConfig) != HAL_OK)
+  if (HAL_TIM_SlaveConfigSynchro(&htim15, &sSlaveConfig) != HAL_OK)
   {
     Error_Handler();
   }
@@ -691,7 +707,7 @@ static void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 1 */
   huart1.Instance = USART1;
-  huart1.Init.BaudRate = 38400;
+  huart1.Init.BaudRate = 460800;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
@@ -754,20 +770,16 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, IO4_Pin|IO3_Pin|IO2_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, FAN_OFF_Pin|DISABLE_HB2_Pin|LED_GREEN2_Pin|LED_GREEN1_Pin 
                           |LED_RED_Pin|IO1_Pin|USB_NRST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(DISABLE_HB1_GPIO_Port, DISABLE_HB1_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : IO4_Pin IO3_Pin IO2_Pin */
-  GPIO_InitStruct.Pin = IO4_Pin|IO3_Pin|IO2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  /*Configure GPIO pins : DISABLE_INPUT_Pin MODE_INPUT_Pin RESET_INPUT_Pin */
+  GPIO_InitStruct.Pin = DISABLE_INPUT_Pin|MODE_INPUT_Pin|RESET_INPUT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : FAN_OFF_Pin DISABLE_HB2_Pin LED_GREEN2_Pin LED_GREEN1_Pin 
@@ -812,7 +824,7 @@ void Error_Handler(void)
   * @param  line: assert_param error line source number
   * @retval None
   */
-void assert_failed(char *file, uint32_t line)
+void assert_failed(uint8_t *file, uint32_t line)
 { 
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,

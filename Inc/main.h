@@ -68,12 +68,12 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define IO4_Pin GPIO_PIN_13
-#define IO4_GPIO_Port GPIOC
-#define IO3_Pin GPIO_PIN_14
-#define IO3_GPIO_Port GPIOC
-#define IO2_Pin GPIO_PIN_15
-#define IO2_GPIO_Port GPIOC
+#define DISABLE_INPUT_Pin GPIO_PIN_13
+#define DISABLE_INPUT_GPIO_Port GPIOC
+#define MODE_INPUT_Pin GPIO_PIN_14
+#define MODE_INPUT_GPIO_Port GPIOC
+#define RESET_INPUT_Pin GPIO_PIN_15
+#define RESET_INPUT_GPIO_Port GPIOC
 #define LOAD_SENSE_B_Pin GPIO_PIN_0
 #define LOAD_SENSE_B_GPIO_Port GPIOA
 #define LOAD_SENSE_A_Pin GPIO_PIN_1

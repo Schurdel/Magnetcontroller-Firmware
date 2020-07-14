@@ -15,8 +15,8 @@ ADC_HandleTypeDef hadc2;
 float analog_in_raw = 0;
 float current_sensor_raw = 0;
 
-uint32_t analog_in_zero = 1965;					// Some measured plausible zero value for input adc
-uint32_t current_sensor_zero = 2565; 			// Some measured plausible zero value for current sensor
+uint32_t analog_in_zero = 1965;					// Some measured default zero value for input adc
+uint32_t current_sensor_zero = 2565; 			// Some measured default zero value for current sensor
 
 ADC_HandleTypeDef hadc1;
 DAC_HandleTypeDef hdac2;
@@ -40,24 +40,41 @@ void UpdateControlLoop(void){
 	uint32_t analog_mean = sum_analog / DAC1_CH1_BUFFER_LEN;
 
 	//Convert sensor data to voltage and current
-	analog_in_raw = (float)((int32_t)analog_mean - (int32_t)analog_in_zero) * INPUT_VOLT * 3;      // 3 Amps for each volt
+	analog_in_raw = (float)((int32_t)analog_mean - (int32_t)analog_in_zero) * INPUT_VOLT * 3;      	// 3 Amps for each volt
 	current_sense_raw = (float)((int32_t)current_mean - (int32_t)current_sensor_zero) * SENSOR_AMP; // Current in Amps
 
-	pwm_output = 0.5f + VOLT_PWM * K_P * (analog_in_raw-current_sense_raw)+ K_I*integrator*0;
+	//Determine pwm output
+	if(HAL_GPIO_ReadPin(MODE_INPUT_GPIO_Port, MODE_INPUT_Pin)){
+		// Control law - PI controller
+		pwm_output = 0.5f + VOLT_PWM * K_P * (analog_in_raw-current_sense_raw)+ K_I*integrator*0;
+	}
+	else{
+		// Directly use input for PWM
+		pwm_output = VOLT_PWM * analog_in_raw;
+	}
+
 
 	// Conditional integration
 	if(pwm_output < 1.0f && pwm_output > 0.0f){
 		integrator += analog_in_raw-current_sense_raw;
 	}
 
+	// Limit the output to 99% to keep bootstrap cap charged...
 	pwm_output = min(0.99f, pwm_output);
 	pwm_output = max(0.01f, pwm_output);
 
 	setPWM1(pwm_output);
 	setPWM2(pwm_output);
 
-	__ENABLE_HB1();
-	__ENABLE_HB2();
+	// Enable or disable the gate drivers
+	if(HAL_GPIO_ReadPin(DISABLE_INPUT_GPIO_Port, DISABLE_INPUT_Pin)){
+		__DISABLE_HB1();
+		__DISABLE_HB2();
+	}
+	else{
+		__ENABLE_HB1();
+		__ENABLE_HB2();
+	}
 
 	// Send out PWM value via DAC
 	uint32_t pwm_dac = pwm_output * 4095;
